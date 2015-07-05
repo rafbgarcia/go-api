@@ -1,0 +1,38 @@
+package main
+
+import (
+    "net/http"
+    "github.com/gin-gonic/gin"
+    "appengine/datastore"
+    "appengine"
+)
+
+func init() {
+    router := gin.Default()
+
+    router.POST("/posts", func(c *gin.Context) {
+        gaeContext := appengine.NewContext(c.Request)
+        post := new(Post)
+
+        c.Bind(&post)
+
+        key := datastore.NewIncompleteKey(gaeContext, "Post", nil)
+
+        if _, err := datastore.Put(gaeContext, key, post); err != nil {
+            c.JSON(http.StatusBadRequest, gin.H{
+                "error": err.Error(),
+            })
+            return
+        }
+
+        c.JSON(http.StatusCreated, post)
+    })
+
+    http.Handle("/", router)
+}
+
+
+type Post struct {
+    Title string `json:"title"`
+    Body string `json:"body"`
+}
