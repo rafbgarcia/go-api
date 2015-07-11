@@ -10,13 +10,10 @@ import (
 func init() {
     router := gin.Default()
 
-    defaultOptionsHandler := func(c *gin.Context) {
-        c.Header("Access-Control-Allow-Origin", "*")
-        c.Header("Access-Control-Allow-Headers", "Content-Type")
-        c.Header("Access-Control-Allow-Methods", "PUT, DELETE")
-    }
-    router.OPTIONS("/posts", defaultOptionsHandler)
-    router.OPTIONS("/posts/:id", defaultOptionsHandler)
+    router.Use(setOrigin)
+
+    router.OPTIONS("/posts", optionsHandler)
+    router.OPTIONS("/posts/:id", optionsHandler)
 
     router.GET("/posts", listPosts)
     router.POST("/posts", createPost)
@@ -33,11 +30,6 @@ type Post struct {
     Body string `json:"body"`
 }
 
-var whiteListDomains = []string {
-    "http://localhost:8080",
-    "http://go-web-rafa.appspot.com",
-}
-
 func deletePost(c *gin.Context) {
     gaeContext := appengine.NewContext(c.Request)
 
@@ -50,11 +42,6 @@ func deletePost(c *gin.Context) {
         return
     }
 
-    for _, domain := range whiteListDomains {
-        if domain == c.Request.Header.Get("Origin") {
-            c.Header("Access-Control-Allow-Origin", domain)
-        }
-    }
     c.AbortWithStatus(http.StatusNoContent)
 }
 
@@ -73,7 +60,6 @@ func createPost(c *gin.Context) {
         return
     }
 
-    c.Header("Access-Control-Allow-Origin", "http://localhost:8080")
     c.JSON(http.StatusCreated, post)
 }
 
@@ -99,7 +85,6 @@ func editPost(c *gin.Context) {
         return
     }
 
-    c.Header("Access-Control-Allow-Origin", "http://localhost:8080")
     c.AbortWithStatus(http.StatusNoContent)
 }
 
@@ -119,6 +104,25 @@ func listPosts(c *gin.Context) {
         post.Id = keys[i].Encode()
     }
 
-    c.Header("Access-Control-Allow-Origin", "http://localhost:8080")
     c.JSON(http.StatusOK, posts)
+}
+
+var allowedDomains = []string{
+    "http://localhost:8080",
+    "http://go-web-rafa.appspot.com",
+    "https://go-web-rafa.appspot.com",
+}
+
+func setOrigin(c *gin.Context) {
+    for _, domain := range allowedDomains {
+        if domain == c.Request.Header.Get("Origin") {
+            c.Header("Access-Control-Allow-Origin", domain)
+            break
+        }
+    }
+}
+
+func optionsHandler(c *gin.Context) {
+    c.Header("Access-Control-Allow-Headers", "Content-Type")
+    c.Header("Access-Control-Allow-Methods", "PUT, DELETE")
 }
