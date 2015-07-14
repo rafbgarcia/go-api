@@ -109,7 +109,6 @@ func listPosts(c *gin.Context) {
 
 var allowedDomains = []string{
     "http://localhost:8080",
-    "http://go-web-rafa.appspot.com",
     "https://go-web-rafa.appspot.com",
 }
 
